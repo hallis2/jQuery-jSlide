@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+<title>jSlide 1.1.3</title>
+<script src="jquery-1.7.2.min.js"></script>
+<script src="jquery.jslide-1.1.3.js"></script>
+</head>
+<body>
+	<h1>jSlide demo</h1>
+
+	<ul id="jslide">
+		<li><img src="images/0001.jpg" alt="0001.jpg" /></li>
+		<li><img src="images/0002.jpg" alt="0002.jpg" /></li>
+		<li><img src="images/0003.jpg" alt="0003.jpg" /></li>
+		<li><img src="images/0004.jpg" alt="0004.jpg" /></li>
+	</ul>
+	
+	<p><button type="button" id="prev">Previous</button>
+	<button type="button" id="next">Next</button></p>
+	
+	<p><a href="jquery.jslide-1.1.3.zip" title="Download jSlide 1.1.3">Download jSlide 1.1.3</a></p>
+	
+	<script type="text/javascript">
+		$(window).load(function() {
+			$('#jslide').jslide({
+				width:640,
+				height:480,
+				nextButton: '#next',
+				prevButton: '#prev',
+			});
+		});
+	</script>
+</body>
+</html>
