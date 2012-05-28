@@ -117,14 +117,14 @@
 			}
 			
 			// Set previous button event
-			if (typeof prevButton === 'object') {
+			if (prevButton && typeof prevButton === 'object') {
 				prevButton.click(function () {
 					$('#' + carouselId).jslide('previous');
 				});
 			}
 			
 			// Set next button event
-			if (typeof nextButton === 'object') {
+			if (nextButton && typeof nextButton === 'object') {
 				nextButton.click(function () {
 					$('#' + carouselId).jslide('next');
 				});
@@ -219,7 +219,9 @@
 			return nextPicture;
 		},
 		interval: function (element, time) {
-			var self, action;
+			var self, action, carouselId;
+			element = (typeof element !== 'object') ? $(this) : element;
+			carouselId = $(element).attr('id');
 			self = typeof element === 'object' ? element : this;
 			action = function() {
 				methods.next(self);
