@@ -98,16 +98,17 @@
 				'height': height.toString() + 'px',
 				'overflow': 'hidden',
 				'text-align': align,
-				'margin': '0', 'padding': '0',
+				'margin': 0, 'padding': 0,
 				'list-style-type': 'none'
 			});
 			carousel.css({
 				'position': 'absolute', 
 				'width': (width * listCount).toString() + 'px', 
-				'top': '0px', 'left': '0px',
-				'margin': '0', 'padding': '0',
+				'top': 0, 'left': 0,
+				'margin': 0, 'padding': 0
 			});
-			if (verticalCenter) {
+			
+			if (verticalCenter != null) {
 				img.css({
 					'vertical-align': 'middle'
 				});
@@ -117,14 +118,14 @@
 			}
 			
 			// Set previous button event
-			if (prevButton && typeof prevButton === 'object') {
+			if (prevButton != null && typeof prevButton === 'object') {
 				prevButton.click(function () {
 					$('#' + carouselId).jslide('previous');
 				});
 			}
 			
 			// Set next button event
-			if (nextButton && typeof nextButton === 'object') {
+			if (nextButton != null && typeof nextButton === 'object') {
 				nextButton.click(function () {
 					$('#' + carouselId).jslide('next');
 				});
