@@ -1,5 +1,5 @@
 /*
-	JSlide by hallis2
+	jSlide by hallis2
 	Simple jQuery carousel	
 	
 	* ---------------------------------------------- *
@@ -38,6 +38,8 @@
 	
 	onRotate: (function) Callback after a rotation - get aplied with current position of carousel and total number of items
 	onInit: (function) Callback after init - get aplied with current position of carousel and total number of items
+	
+	gestures: (boolean) Let mobile users slide with touch gestures
 */
 (function ($) {
 	var methods, nextPicture;
@@ -73,6 +75,9 @@
 			interval = !settings.interval || isNaN(parseInt(settings.interval, 10)) ? null : parseInt(settings.interval, 10);
 			duration = !settings.duration || isNaN(parseInt(settings.duration, 10)) ? 400 : parseInt(settings.duration, 10);
 			
+			// Gestures for mobile units
+			gesture = settings.gesture !== false ? true : false;
+			
 			// Callbacks
 			onRotate = !settings.onRotate ? null : settings.onRotate;
 			onInit = !settings.onInit ? null : settings.onInit;
@@ -83,6 +88,8 @@
 			methods.savedSettings[carouselId].duration = duration;
 			methods.savedSettings[carouselId].onRotate = onRotate;
 			methods.savedSettings[carouselId].interval = interval;
+			methods.savedSettings[carouselId].width = width;
+			methods.savedSettings[carouselId].height = height;
 			
 			// Set style to the carousel
 			wrapper.css({
@@ -108,7 +115,7 @@
 				'margin': 0, 'padding': 0
 			});
 			
-			if (verticalCenter != null) {
+			if (verticalCenter !== null) {
 				img.css({
 					'vertical-align': 'middle'
 				});
@@ -118,14 +125,14 @@
 			}
 			
 			// Set previous button event
-			if (prevButton != null && typeof prevButton === 'object') {
+			if (prevButton !== null && typeof prevButton === 'object') {
 				prevButton.click(function () {
 					$('#' + carouselId).jslide('previous');
 				});
 			}
 			
 			// Set next button event
-			if (nextButton != null && typeof nextButton === 'object') {
+			if (nextButton !== null && typeof nextButton === 'object') {
 				nextButton.click(function () {
 					$('#' + carouselId).jslide('next');
 				});
@@ -138,6 +145,13 @@
 			
 			if (onInit !== null) {
 				onInit.apply(carousel, methods.carouselData[carouselId]);
+			}
+			
+			// Set gesutres for mobile units
+			if (gesture !== null && gesture === true) {
+				methods.firstTouch = false;
+				methods.touchDifference = false;
+				methods.gesture(carousel);
 			}
 		},
 		rotate: function (carouselId, nextPicture) {
@@ -228,6 +242,51 @@
 				methods.next(self);
 			};
 			methods.savedSettings[carouselId].intervalf = setInterval(action, time * 1000);
+		},
+		gesture: function(element) {
+			// Set touch move event
+			element.bind('touchmove', function(e) {
+				var carouselId, carouselData, currentLeft, width;
+				
+				element = (typeof element !== 'object') ? $(this) : element;
+				carouselId = $(element).attr('id');
+				carouselData = methods.carouselData[carouselId];
+				width = methods.savedSettings[carouselId].width;
+				
+				currentLeft = width * carouselData[0];
+				
+				methods.firstTouch = methods.firstTouch === false ? event.touches[0].pageX : methods.firstTouch;
+				methods.touchDiffernce = methods.touchDiffernce === false ? 0 : methods.firstTouch - event.touches[0].pageX
+				
+				e.preventDefault();
+				element.css('left', '-' + (currentLeft + methods.touchDiffernce).toString() + 'px');
+			});
+			
+			// Set touch end event
+			element.bind('touchend', function(e) {
+				if(!methods.firstTouch) {
+					return false;
+				}
+				
+				var carouselId, carouselData, currentLeft, nextPicture, width;
+				
+				element = (typeof element !== 'object') ? $(this) : element;
+				carouselId = $(element).attr('id');
+				carouselData = methods.carouselData[carouselId];
+				width = methods.savedSettings[carouselId].width;
+				
+				currentLeft = -parseInt(element.css('left'), 10);
+				currentLeft = methods.touchDiffernce < 0 ? currentLeft - parseInt(width / 1.4, 10) : currentLeft + parseInt(width / 1.4, 10);
+				currentLeft = currentLeft > (width * carouselData[1]) ? width * carouselData[0] : currentLeft;
+				currentLeft = currentLeft < 0 ? 0 : currentLeft;
+				
+				nextPicture = parseInt(currentLeft / width, 10);
+				
+				methods.goto(element, nextPicture);
+				
+				methods.firstTouch = false;
+				methods.touchDiffernce = false;
+			});
 		}
 	};
 	
@@ -237,7 +296,7 @@
 		} else if (typeof method === 'object' || !method) {
 			return methods.init.apply(this, arguments);
 		} else {
-			$.error('Method ' +  method + ' does not exist in jQuery.JSlide');
+			$.error('Method ' +  method + ' does not exist in jQuery.jSlide');
 		}
 	};
 }(jQuery));
