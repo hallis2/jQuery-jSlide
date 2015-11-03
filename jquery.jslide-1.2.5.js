@@ -14,7 +14,7 @@
 	<button id="prev">Previous</button>
 	<button id="next">Next</button>
 	
-	$('#carousel').jslide({
+	jQuery('#carousel').jslide({
 		width:500,
 		height:300,
 		nextButton:'#next',
@@ -24,8 +24,8 @@
 	* ---------------------------------------------- *
 	Parameters
 	
-	width: (int) The width of the carousel
-	height: (int) The height of the carousel
+	width: (int) The width of the carousel, default 640
+	height: (int) The height of the carousel, default 480
 	
 	prevButton: (selector) The button to go to the previous item
 	nextButton: (selector) The button to go to the next item
@@ -34,10 +34,11 @@
 	verticalCenter: (boolean) Verticaly centered
 	
 	interval: (int) Seconds between automatic change of item, not sett = off
-	duration: (int) The speed of the animation in miliseconds
+	duration: (int) The speed of the animation in miliseconds, defalut = 200
 	
-	onRotate: (function) Callback after a rotation - get aplied with current position of carousel and total number of items
-	onInit: (function) Callback after init - get aplied with current position of carousel and total number of items
+	beforeRotate: (function) Callback before rotation - get aplied with current position of carousel and total number of items ("this" is the carousel object)
+	onRotate: (function) Callback after a rotation - get aplied with current position of carousel and total number of items ("this" is the carousel object)
+	onInit: (function) Callback after init - get aplied with current position of carousel and total number of items ("this" is the carousel object)
 	
 	gestures: (boolean) Let mobile users slide with touch gestures
 */
@@ -49,12 +50,30 @@
 		init: function (settings) {
 			var carousel, carouselId, wrapper, list, img, listCount, width, height, prevButton, nextButton, align, verticalCenter, interval, duration, onRotate, onInit;
 			
-			carousel = $(this);
+			if(jQuery(this).length > 1) {
+				jQuery(this).each(function() {
+					jQuery(this).jslide(settings);
+				});
+				return;
+			}
+			
+			carousel = jQuery(this);
+			
+			if(carousel.attr('id') == null || carousel.attr('id') == "") {
+				carousel.attr('id', "jslider-" + (Math.random().toString().replace(".","")));
+			}
 			carouselId = carousel.attr('id');
+			
+			// Remove previous jSlides
+			if(methods.carouselData[carouselId] != null) {
+				methods.carouselData[carouselId] = null;
+				methods.savedSettings[carouselId] = null;
+				jQuery(this).parent(".jslide").replaceWith(this);
+			}
 			
 			carousel.wrap('<div class="jslide" id="' + carouselId + 'Wrapper" />');
 			
-			wrapper = $('#' + carouselId + 'Wrapper');
+			wrapper = jQuery('#' + carouselId + 'Wrapper');
 			list = carousel.children('li');
 			img = list.children('img');
 			listCount = list.size();
@@ -64,8 +83,8 @@
 			height 	= !settings.height || isNaN(parseInt(settings.height, 10)) ? 480 : parseInt(settings.height, 10);
 			
 			// Navigation buttons
-			prevButton 	= !settings.prevButton || $(settings.prevButton).length == 0 ? null : $(settings.prevButton);
-			nextButton 	= !settings.nextButton || $(settings.nextButton).length == 0 ? null : $(settings.nextButton);
+			prevButton 	= !settings.prevButton || jQuery(settings.prevButton).length == 0 ? null : jQuery(settings.prevButton);
+			nextButton 	= !settings.nextButton || jQuery(settings.nextButton).length == 0 ? null : jQuery(settings.nextButton);
 			
 			// Item alignment
 			align = !settings.align ? 'center' : settings.align;
@@ -73,12 +92,13 @@
 			
 			// Automatic carousel
 			interval = !settings.interval || isNaN(parseInt(settings.interval, 10)) ? null : parseInt(settings.interval, 10);
-			duration = !settings.duration || isNaN(parseInt(settings.duration, 10)) ? 400 : parseInt(settings.duration, 10);
+			duration = !settings.duration || isNaN(parseInt(settings.duration, 10)) ? 200 : parseInt(settings.duration, 10);
 			
 			// Gestures for mobile units
-			gesture = settings.gesture !== false ? true : false;
+			gestures = settings.gestures !== false ? true : false;
 			
 			// Callbacks
+			beforeRotate = !settings.beforeRotate ? null : settings.beforeRotate;
 			onRotate = !settings.onRotate ? null : settings.onRotate;
 			onInit = !settings.onInit ? null : settings.onInit;
 			
@@ -87,54 +107,63 @@
 			methods.savedSettings[carouselId] = {};
 			methods.savedSettings[carouselId].duration = duration;
 			methods.savedSettings[carouselId].onRotate = onRotate;
+			methods.savedSettings[carouselId].beforeRotate = beforeRotate;
 			methods.savedSettings[carouselId].interval = interval;
 			methods.savedSettings[carouselId].width = width;
 			methods.savedSettings[carouselId].height = height;
 			
 			// Set style to the carousel
 			wrapper.css({
-				'width': width.toString() + 'px', 
-				'height': height.toString() + 'px', 
-				'position': 'relative', 
-				'overflow': 'hidden' 
-			});
-			list.css({
-				'float': 'left',
-				'position': 'relative',
-				'width': width.toString() + 'px',
-				'height': height.toString() + 'px',
-				'overflow': 'hidden',
-				'text-align': align,
-				'margin': 0, 'padding': 0,
-				'list-style-type': 'none'
-			});
-			carousel.css({
-				'position': 'absolute', 
-				'width': (width * listCount).toString() + 'px', 
-				'top': 0, 'left': 0,
-				'margin': 0, 'padding': 0
+				width: width.toString() + 'px', 
+				height: height.toString() + 'px', 
+				position:'relative', 
+				overflow:'hidden' 
 			});
 			
-			if (verticalCenter !== null) {
+			list.css({
+				float:'left',
+				position:'relative',
+				width: width.toString() + 'px',
+				height: height.toString() + 'px',
+				overflow:'hidden',
+				textAlign: align,
+				margin:0,
+				padding:0,
+				listStyleType:'none',
+				display:'list-item'
+			});
+			
+			carousel.css({
+				position:'absolute', 
+				width: (width * listCount).toString() + 'px', 
+				top:0,
+				left:0,
+				margin:0,
+				padding:0
+			});
+			
+			if (verticalCenter === true) {
 				img.css({
-					'vertical-align': 'middle'
+					verticalAlign:'middle'
 				});
 				list.css({
-					'line-height': height.toString() + 'px'	
+					lineHeight: height.toString() + 'px'	
 				});
 			}
 			
 			// Set previous button event
 			if (prevButton !== null && typeof prevButton === 'object') {
+				prevButton.unbind('click');
 				prevButton.click(function () {
-					$('#' + carouselId).jslide('previous');
+					jQuery('#' + carouselId).jslide('previous');
 				});
 			}
 			
 			// Set next button event
 			if (nextButton !== null && typeof nextButton === 'object') {
+				nextButton.unbind('click');
 				nextButton.click(function () {
-					$('#' + carouselId).jslide('next');
+					jQuery('#' + carouselId).jslide('next');
 				});
 			}
 			
@@ -143,12 +172,13 @@
 				methods.interval(carousel, interval);
 			}
 			
+			// Init callback
 			if (onInit !== null) {
 				onInit.apply(carousel, methods.carouselData[carouselId]);
 			}
 			
 			// Set gesutres for mobile units
-			if (gesture !== null && gesture === true) {
+			if (gestures !== null && gestures === true) {
 				methods.firstTouch = false;
 				methods.touchDifference = false;
 				methods.gesture(carousel);
@@ -157,16 +187,23 @@
 		rotate: function (carouselId, nextPicture) {
 			var carousel, width, carouselData, left, duration, callback;
 			
-			carousel = $('#' + carouselId);
-			width = carousel.children('li').width();
+			carousel = jQuery('#' + carouselId);
 			carouselData = methods.carouselData[carouselId];
-			left = width * nextPicture;
-			duration = methods.savedSettings[carouselId].duration;
-			onRotate = methods.savedSettings[carouselId].onRotate;
+			beforeRotate = methods.savedSettings[carouselId].beforeRotate;
+				duration = methods.savedSettings[carouselId].duration;
+				onRotate = methods.savedSettings[carouselId].onRotate;
 			
+			width = carousel.children('li').width();
+			left = width * nextPicture;
 			carouselData[0] = nextPicture;
 			
+			// Before rotate callback
+			if(beforeRotate !== null) {
+				beforeRotate.apply(carousel, carouselData);
+			}
+			
 			carousel.animate({'left': '-' + left.toString() + 'px'}, duration, function () {
+				// Rotate callback
 				if(onRotate !== null) {
 					onRotate.apply(carousel, carouselData);
 				}
@@ -184,10 +221,10 @@
 			var carouselId, carouselData, activePicture, counted;
 			
 			if (typeof element !== 'object') {
-				element = $(this);
+				element = jQuery(this);
 			}
 			
-			carouselId = $(element).attr('id');
+			carouselId = jQuery(element).attr('id');
 			carouselData = methods.carouselData[carouselId];
 			activePicture = carouselData[0];
 			counted = carouselData[1];
@@ -204,8 +241,8 @@
 		previous: function (element) {
 			var carouselId, carouselData, activePicture, counted;
 			
-			element = (typeof element !== 'object') ? $(this) : element;
-			carouselId = $(element).attr('id');
+			element = (typeof element !== 'object') ? jQuery(this) : element;
+			carouselId = jQuery(element).attr('id');
 			carouselData = methods.carouselData[carouselId];
 			activePicture = carouselData[0];
 			counted = carouselData[1];
@@ -221,22 +258,22 @@
 		},
 		goto: function (element, nextPicture) {
 			if (typeof element !== 'object') {
-				element = $(this);
+				element = jQuery(this);
 			}
 			
 			if (nextPicture === null) {
 				nextPicture = 0;
 			}
 			
-			var carouselId = $(element).attr('id');
+			var carouselId = jQuery(element).attr('id');
 			methods.rotate(carouselId, nextPicture);
 			
 			return nextPicture;
 		},
 		interval: function (element, time) {
 			var self, action, carouselId;
-			element = (typeof element !== 'object') ? $(this) : element;
-			carouselId = $(element).attr('id');
+			element = (typeof element !== 'object') ? jQuery(this) : element;
+			carouselId = jQuery(element).attr('id');
 			self = typeof element === 'object' ? element : this;
 			action = function() {
 				methods.next(self);
@@ -248,8 +285,8 @@
 			element.bind('touchmove', function(e) {
 				var carouselId, carouselData, currentLeft, width;
 				
-				element = (typeof element !== 'object') ? $(this) : element;
-				carouselId = $(element).attr('id');
+				element = (typeof element !== 'object') ? jQuery(this) : element;
+				carouselId = jQuery(element).attr('id');
 				carouselData = methods.carouselData[carouselId];
 				width = methods.savedSettings[carouselId].width;
 				
@@ -270,8 +307,8 @@
 				
 				var carouselId, carouselData, currentLeft, nextPicture, width;
 				
-				element = (typeof element !== 'object') ? $(this) : element;
-				carouselId = $(element).attr('id');
+				element = (typeof element !== 'object') ? jQuery(this) : element;
+				carouselId = jQuery(element).attr('id');
 				carouselData = methods.carouselData[carouselId];
 				width = methods.savedSettings[carouselId].width;
 				
@@ -290,13 +327,13 @@
 		}
 	};
 	
-	$.fn.jslide = function (method) {
+	jQuery.fn.jslide = function (method) {
 		if (methods[method]) {
 			return methods[method].apply(this, arguments);
 		} else if (typeof method === 'object' || !method) {
 			return methods.init.apply(this, arguments);
 		} else {
-			$.error('Method ' +  method + ' does not exist in jQuery.jSlide');
+			jQuery.error('Method ' +  method + ' does not exist in jQuery.jSlide');
 		}
 	};
 }(jQuery));
